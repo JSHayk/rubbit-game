@@ -61,6 +61,7 @@ function moveRubbit(e) {
       if (isPrevented) return;
       moveRubbitHorizontal(nextSquareIndex);
       drawBoard();
+      moveWolfs();
     },
     moveRight() {
       let nextSquareIndex = squareIndex + 1;
@@ -73,6 +74,7 @@ function moveRubbit(e) {
       if (isPrevented) return;
       moveRubbitHorizontal(nextSquareIndex);
       drawBoard();
+      moveWolfs();
     },
     moveTop() {
       let nextRowIndex = rowIndex - 1;
@@ -85,6 +87,7 @@ function moveRubbit(e) {
       if (isPrevented) return;
       moveRubbitVertical(nextRowIndex);
       drawBoard();
+      moveWolfs();
     },
     moveBottom() {
       let nextRowIndex = rowIndex + 1;
@@ -97,16 +100,41 @@ function moveRubbit(e) {
       if (isPrevented) return;
       moveRubbitVertical(nextRowIndex);
       drawBoard();
+      moveWolfs();
     },
   };
   baseSwitch(e.keyCode, payload);
 }
 function moveWolfs() {
-  const { rowIndex, squareIndex } = rubbitsData;
-  wolfsData.forEach((item) => {
-    // boardData[item.rowIndex][squareIndex]
-    // Write wolf eat logic, and it's end.But write better names for functions, and short for loops in one function for multy use
-  });
+  baseForLoop((i) => {
+    const { rowIndex, squareIndex } = wolfsData[i];
+    const { x, y } = getWolfNearestMove(rowIndex, squareIndex);
+  }, wolfsData.length);
+
+  // const num = distance(
+  //   {
+  //     x: item.rowIndex,
+  //     y: item.squareIndex,
+  //   },
+  //   {
+  //     x: rowIndex,
+  //     y: squareIndex,
+  //   }
+  // );
+}
+
+function getWolfNearestMove(rowIndex, squareIndex) {
+  const nearestMove = { x: null, y: null };
+  const wolfData = getWolfData(rowIndex, squareIndex);
+  const valuesArr = Object.values(wolfData);
+  baseForLoop((i) => {
+    const { value, x, y, type } = valuesArr[i];
+    if (value === null || value === 1 || value === 3) return;
+    const { isPrevented } = checkNextHero(value);
+    if (isPrevented) return;
+  }, valuesArr.length);
+
+  return nearestMove;
 }
 function fillArr(count, value) {
   return Array(count).fill(value);
@@ -169,6 +197,11 @@ function getHeroesData(num) {
 
   return heroes;
 }
+function distance(p1, p2) {
+  const a = p1.x - p2.x;
+  const b = p2.y - p2.y;
+  return Math.pow(a * a + b * b, 2);
+}
 // Helpers
 function baseSwitch(condition, payload) {
   switch (condition) {
@@ -199,18 +232,25 @@ function baseSwitch(condition, payload) {
       break;
   }
 }
+function baseForLoop(action, end, start = 0) {
+  for (let i = start; i < end; i++) {
+    action(i);
+  }
+}
 function moveRubbitVertical(nextRowIndex) {
   const { rowIndex, squareIndex } = rubbitsData[0];
-  const tmp = boardData[rowIndex][squareIndex];
-  boardData[rowIndex][squareIndex] = boardData[nextRowIndex][squareIndex];
+  const boardRow = boardData[rowIndex];
+  const tmp = boardRow[squareIndex];
+  boardRow[squareIndex] = boardData[nextRowIndex][squareIndex];
   boardData[nextRowIndex][squareIndex] = tmp;
   rubbitsData[0] = { rowIndex: nextRowIndex, squareIndex };
 }
 function moveRubbitHorizontal(nextSquareIndex) {
   const { rowIndex, squareIndex } = rubbitsData[0];
-  const tmp = boardData[rowIndex][squareIndex];
-  boardData[rowIndex][squareIndex] = boardData[rowIndex][nextSquareIndex];
-  boardData[rowIndex][nextSquareIndex] = tmp;
+  const boardRow = boardData[rowIndex];
+  const tmp = boardRow[squareIndex];
+  boardRow[squareIndex] = boardRow[nextSquareIndex];
+  boardRow[nextSquareIndex] = tmp;
   rubbitsData[0] = { rowIndex, squareIndex: nextSquareIndex };
 }
 function checkNextHero(hero) {
@@ -224,6 +264,9 @@ function checkNextHero(hero) {
       break;
     case 3:
       isWin = true;
+      break;
+    case 2:
+      // isLose = true;
       break;
     default:
       break;
@@ -243,6 +286,37 @@ function useArray(action, end, start) {
   for (let i = start; i < end; i++) {
     action();
   }
+}
+function getWolfData(rowIndex, squareIndex) {
+  const boardRow = boardData[rowIndex];
+  const bottomRow = boardData[rowIndex + 1] ?? null;
+  const topRow = boardData[rowIndex - 1] ?? null;
+  return {
+    left: {
+      value: boardRow[squareIndex - 1] ?? null,
+      x: rowIndex,
+      y: squareIndex - 1,
+      type: "left",
+    },
+    right: {
+      value: boardRow[squareIndex + 1] ?? null,
+      x: rowIndex,
+      y: squareIndex + 1,
+      type: "right",
+    },
+    top: {
+      value: topRow && topRow[squareIndex],
+      x: rowIndex - 1,
+      y: squareIndex,
+      type: "top",
+    },
+    bottom: {
+      value: bottomRow && bottomRow[squareIndex],
+      x: rowIndex + 1,
+      y: squareIndex,
+      type: "bottom",
+    },
+  };
 }
 
 setBoardData(5);
