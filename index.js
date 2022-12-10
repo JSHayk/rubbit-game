@@ -12,7 +12,6 @@ const setBoardData = (num) => {
   boardData.push(...getRandomBoardData(num));
   drawBoard();
 };
-
 function drawBoard() {
   if (isWin) {
     appendSection("../assets/win_picture.png", "You Won");
@@ -23,18 +22,18 @@ function drawBoard() {
   }
   const boardContentEl = document.querySelector(".board-content");
   boardContentEl.innerHTML = "";
-  for (let i = 0; i < boardData.length; i++) {
+  baseForLoop(i => {
     const boardRowEl = document.createElement("div");
-    boardRowEl.classList.add("board-row");
-    for (let j = 0; j < boardData[i].length; j++) {
-      boardRowEl.innerHTML += `
-          <div class="board-row-square square-${i + 1}">
-              <img src=${baseSwitch(boardData[i][j])} alt="" />
-          </div>
-        `;
-    }
+      boardRowEl.classList.add("board-row");
+      baseForLoop(j => {
+        boardRowEl.innerHTML += `
+            <div class="board-row-square square-${i + 1}">
+                <img src=${baseSwitch(boardData[i][j])} alt="" />
+            </div>
+          `;
+      }, boardData[i].length);
     boardContentEl.appendChild(boardRowEl);
-  }
+  }, boardData.length);
 }
 function drawSection(imagePath, content) {
   const winSectionEl = document.createElement("section");
@@ -108,33 +107,68 @@ function moveRubbit(e) {
 function moveWolfs() {
   baseForLoop((i) => {
     const { rowIndex, squareIndex } = wolfsData[i];
-    const { x, y } = getWolfNearestMove(rowIndex, squareIndex);
+    const {
+      rowIndex: nearestRowIndex,
+      squareIndex: nearestSquareIndex
+    } = getWolfNearestMoveData(rowIndex, squareIndex);
+    wolfsData[i] = moveWolf({rowIndex, squareIndex, nearestRowIndex, nearestSquareIndex})
+    drawBoard();
   }, wolfsData.length);
-
-  // const num = distance(
-  //   {
-  //     x: item.rowIndex,
-  //     y: item.squareIndex,
-  //   },
-  //   {
-  //     x: rowIndex,
-  //     y: squareIndex,
-  //   }
-  // );
 }
-
-function getWolfNearestMove(rowIndex, squareIndex) {
-  const nearestMove = { x: null, y: null };
+function moveWolf({rowIndex, squareIndex, nearestRowIndex, nearestSquareIndex}) {
+  const tmp = boardData[rowIndex][squareIndex];
+  boardData[rowIndex][squareIndex] = boardData[nearestRowIndex][nearestSquareIndex];
+  boardData[nearestRowIndex][nearestSquareIndex] = tmp;
+  return {rowIndex: nearestRowIndex, squareIndex: nearestSquareIndex}
+}
+function getWolfNearestMoveData(rowIndex, squareIndex) {
   const wolfData = getWolfData(rowIndex, squareIndex);
-  const valuesArr = Object.values(wolfData);
+  return getNearestMoveData(getMovesArr(Object.values(wolfData)));
+}
+function getMovesArr(wolfArr) {
+  const movesArr = [];
   baseForLoop((i) => {
-    const { value, x, y, type } = valuesArr[i];
+    const { value, x, y } = wolfArr[i];
     if (value === null || value === 1 || value === 3) return;
     const { isPrevented } = checkNextHero(value);
     if (isPrevented) return;
-  }, valuesArr.length);
+    const coordinate = distance(
+        {
+          x, 
+          y
+        },
+        {
+          x: rubbitsData[0].rowIndex,
+          y: rubbitsData[0].squareIndex,
+        }
+      );
+      movesArr.push({
+      coordinate,
+      rowIndex: x, squareIndex: y
+    });
+  }, wolfArr.length);
+  return movesArr;
+}
+function getNearestMoveData(arr) {
+  if (!arr[0]) return {rowIndex: null, squareIndex: null};
+  let nearestMoveData = arr[0];
+  let nearestCoordinate = arr[0]?.coordinate;
+  baseForLoop(i => {
+    const {coordinate} = arr[i];
+    if (coordinate === 0 && nearestCoordinate === 0) {
+      const {squareIndex} = rubbitsData[0]
+      if (squareIndex > arr[i].squareIndex) {
+        nearestMoveData = arr[i];
+        return;
+      }
+    }
+    if (coordinate < nearestCoordinate) {
+      nearestCoordinate = coordinate;
+      nearestMoveData = arr[i];
+    }
+  }, arr.length, 1);
 
-  return nearestMove;
+  return nearestMoveData;
 }
 function fillArr(count, value) {
   return Array(count).fill(value);
@@ -142,15 +176,15 @@ function fillArr(count, value) {
 function getRandomBoardData(num) {
   const heroes = getHeroesData(num);
   const randomBoard = getInitialBoard(num);
-  for (let i = 0; i < randomBoard.length; i++) {
-    for (let j = 0; j < randomBoard[i].length; j++) {
+  baseForLoop(i => {
+    baseForLoop(j => {
       const randomHeroIndex = Math.ceil(Math.random() * heroes.length - 1);
-      const hero = heroes[randomHeroIndex];
-      randomBoard[i][j] = hero;
-      setHeroesData(hero, i, j); // Setting the positions of heroes
-      heroes.splice(randomHeroIndex, 1); //  removeing the current item from array for not repeating
-    }
-  }
+          const hero = heroes[randomHeroIndex];
+          randomBoard[i][j] = hero;
+          setHeroesData(hero, i, j); // Setting the positions of heroes
+          heroes.splice(randomHeroIndex, 1); //  removeing the current item from array for not 
+    }, randomBoard[i].length);
+  }, randomBoard.length);
   return randomBoard;
 }
 function setHeroesData(hero, rowIndex, squareIndex) {
@@ -172,9 +206,9 @@ function setHeroesData(hero, rowIndex, squareIndex) {
 }
 function getInitialBoard(count) {
   const initialBoard = [];
-  for (let i = 0; i < count; i++) {
+  baseForLoop(() => {
     initialBoard.push(fillArr(count, null));
-  }
+  }, count);
   return initialBoard;
 }
 function getHeroesData(num) {
@@ -203,6 +237,79 @@ function distance(p1, p2) {
   return Math.pow(a * a + b * b, 2);
 }
 // Helpers
+function moveRubbitVertical(nextRowIndex) {
+  const { rowIndex, squareIndex } = rubbitsData[0];
+  const boardRow = boardData[rowIndex];
+  const tmp = boardRow[squareIndex];
+  boardRow[squareIndex] = boardData[nextRowIndex][squareIndex];
+  boardData[nextRowIndex][squareIndex] = tmp;
+  rubbitsData[0] = { rowIndex: nextRowIndex, squareIndex };
+}
+function moveRubbitHorizontal(nextSquareIndex) {
+  const { rowIndex, squareIndex } = rubbitsData[0];
+  const boardRow = boardData[rowIndex];
+  const tmp = boardRow[squareIndex];
+  boardRow[squareIndex] = boardRow[nextSquareIndex];
+  boardRow[nextSquareIndex] = tmp;
+  rubbitsData[0] = { rowIndex, squareIndex: nextSquareIndex };
+}
+function checkNextHero(hero) {
+  let isPrevented = false;
+  switch (hero) {
+    case 1:
+      isLose = true;
+      break;
+    case 4:
+      isPrevented = true;
+      break;
+    case 3:
+      isWin = true;
+      break;
+    case 2:
+      isLose = true;
+      break;
+    default:
+      break;
+  }
+  return { isPrevented };
+}
+function pageReload() {
+  window.location.reload();
+}
+function appendSection(imagePath, text) {
+  if (!imagePath || !text) throw new Error("invalid arguments");
+  const root = document.getElementById("root");
+  root.innerHTML = "";
+  root.appendChild(drawSection(imagePath, text));
+}
+function getWolfData(rowIndex, squareIndex) {
+  const boardRow = boardData[rowIndex];
+  const bottomRow = boardData[rowIndex + 1] ?? null;
+  const topRow = boardData[rowIndex - 1] ?? null;
+  return {
+    left: {
+      value: boardRow[squareIndex - 1] ?? null,
+      x: rowIndex,
+      y: squareIndex - 1,
+    },
+    right: {
+      value: boardRow[squareIndex + 1] ?? null,
+      x: rowIndex,
+      y: squareIndex + 1,
+    },
+    top: {
+      value: topRow && topRow[squareIndex],
+      x: rowIndex - 1,
+      y: squareIndex,
+    },
+    bottom: {
+      value: bottomRow && bottomRow[squareIndex],
+      x: rowIndex + 1,
+      y: squareIndex,
+    },
+  };
+}
+// Common 
 function baseSwitch(condition, payload) {
   switch (condition) {
     case 2: // Rubbit
@@ -236,87 +343,6 @@ function baseForLoop(action, end, start = 0) {
   for (let i = start; i < end; i++) {
     action(i);
   }
-}
-function moveRubbitVertical(nextRowIndex) {
-  const { rowIndex, squareIndex } = rubbitsData[0];
-  const boardRow = boardData[rowIndex];
-  const tmp = boardRow[squareIndex];
-  boardRow[squareIndex] = boardData[nextRowIndex][squareIndex];
-  boardData[nextRowIndex][squareIndex] = tmp;
-  rubbitsData[0] = { rowIndex: nextRowIndex, squareIndex };
-}
-function moveRubbitHorizontal(nextSquareIndex) {
-  const { rowIndex, squareIndex } = rubbitsData[0];
-  const boardRow = boardData[rowIndex];
-  const tmp = boardRow[squareIndex];
-  boardRow[squareIndex] = boardRow[nextSquareIndex];
-  boardRow[nextSquareIndex] = tmp;
-  rubbitsData[0] = { rowIndex, squareIndex: nextSquareIndex };
-}
-function checkNextHero(hero) {
-  let isPrevented = false;
-  switch (hero) {
-    case 1:
-      isLose = true;
-      break;
-    case 4:
-      isPrevented = true;
-      break;
-    case 3:
-      isWin = true;
-      break;
-    case 2:
-      // isLose = true;
-      break;
-    default:
-      break;
-  }
-  return { isPrevented };
-}
-function pageReload() {
-  window.location.reload();
-}
-function appendSection(imagePath, text) {
-  if (!imagePath || !text) throw new Error("invalid arguments");
-  const root = document.getElementById("root");
-  root.innerHTML = "";
-  root.appendChild(drawSection(imagePath, text));
-}
-function useArray(action, end, start) {
-  for (let i = start; i < end; i++) {
-    action();
-  }
-}
-function getWolfData(rowIndex, squareIndex) {
-  const boardRow = boardData[rowIndex];
-  const bottomRow = boardData[rowIndex + 1] ?? null;
-  const topRow = boardData[rowIndex - 1] ?? null;
-  return {
-    left: {
-      value: boardRow[squareIndex - 1] ?? null,
-      x: rowIndex,
-      y: squareIndex - 1,
-      type: "left",
-    },
-    right: {
-      value: boardRow[squareIndex + 1] ?? null,
-      x: rowIndex,
-      y: squareIndex + 1,
-      type: "right",
-    },
-    top: {
-      value: topRow && topRow[squareIndex],
-      x: rowIndex - 1,
-      y: squareIndex,
-      type: "top",
-    },
-    bottom: {
-      value: bottomRow && bottomRow[squareIndex],
-      x: rowIndex + 1,
-      y: squareIndex,
-      type: "bottom",
-    },
-  };
 }
 
 setBoardData(5);
