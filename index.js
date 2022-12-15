@@ -163,12 +163,33 @@ function getMovesArr(wolfArr) {
 function findNearestMoveData(arr) {
   let nearestMoveData = arr[0];
   let nearestCoordinate = arr[0]?.coordinate;
+  const _whenOne = [];
+  const sameArr = [];
+  const { rowIndex, squareIndex } = rubbitsData[0];
+  let isChecked = false;
+  console.group("arr");
+  console.log(arr);
+  console.groupEnd();
   useFor(
-    (i) => {
+    (i, j) => {
       const { coordinate } = arr[i];
+      if (arr[j].coordinate >= 1) {
+        _whenOne.push(arr[j]);
+      }
+      if (arr[j].coordinate === 0) {
+        isChecked = true;
+        console.log("mtav 0");
+      }
+
+      if (coordinate === 1 && nearestCoordinate === 1) {
+        if (arr[i].squareIndex <= squareIndex) {
+          nearestMoveData = arr[i];
+          return;
+        }
+      }
       useIf(coordinate === 0 && nearestCoordinate === 0, () => {
-        const { squareIndex } = rubbitsData[0];
         useIf(squareIndex > arr[i].squareIndex, () => {
+          isChecked = true;
           nearestMoveData = arr[i];
           return;
         });
@@ -181,7 +202,15 @@ function findNearestMoveData(arr) {
     arr.length,
     1
   );
-
+  const nearestValue = findNearestValue(_whenOne, rowIndex, squareIndex);
+  if (nearestValue && !isChecked) {
+    nearestMoveData = nearestValue;
+    console.group("isChecked && Value");
+    console.log(nearestValue, "Value");
+    console.log(_whenOne, "when one");
+    console.log(squareIndex, "rubbit square index");
+    console.groupEnd();
+  }
   return nearestMoveData;
 }
 function fillArr(count, value) {
@@ -228,7 +257,7 @@ function getInitialBoard(count) {
 function getHeroesData(num) {
   if (!num) throw new Error("Invalid arguments");
   let heroes = [];
-  let wolfsCount = Math.ceil(num / 2);
+  let wolfsCount = 1; //Math.ceil(num / 2);
   let fencesCount = Math.ceil(num - 1);
   let homeCount = 1;
   let rubbitCount = 1;
@@ -246,9 +275,9 @@ function getHeroesData(num) {
   return heroes;
 }
 function distance(p1, p2) {
-  const a = p1.x - p2.x;
-  const b = p2.y - p2.y;
-  return Math.pow(a * a + b * b, 2);
+  const a = p1.x - p2.x; // 0 row
+  const b = p2.y - p2.y; // -2 square
+  return Math.sqrt(a * a + b * b);
 }
 // Helpers
 function moveRubbitVertical(nextRowIndex) {
@@ -326,6 +355,19 @@ function getWolfData(rowIndex, squareIndex) {
     },
   };
 }
+function findNearestValue(arr, rowIndex, squareIndex) {
+  const values = {};
+  useFor((i) => {
+    values[
+      Math.abs(arr[i].rowIndex - rowIndex) +
+        Math.abs(arr[i].squareIndex - squareIndex)
+    ] = arr[i];
+  }, arr.length);
+  console.group("Values ");
+  console.log(Object.keys(values));
+  console.groupEnd();
+  return values[Math.min(...Object.keys(values))];
+}
 // Common
 function useSwitch(condition, payload) {
   switch (condition) {
@@ -357,8 +399,8 @@ function useSwitch(condition, payload) {
   }
 }
 function useFor(action, end, start = 0) {
-  for (let i = start; i < end; i++) {
-    action(i);
+  for (let i = start, j = 0; i < end; i++, j++) {
+    action(i, j);
   }
 }
 function useIf(condition, action) {
