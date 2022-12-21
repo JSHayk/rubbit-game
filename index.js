@@ -23,19 +23,19 @@ function drawBoard() {
 
   const boardContentEl = document.querySelector(".board-content");
   boardContentEl.innerHTML = "";
-  useFor((i) => {
+  boardData.forEach((x, idx) => {
     const boardRowEl = document.createElement("div");
     boardRowEl.classList.add("board-row");
-    useFor((j) => {
-      const src = useSwitch(boardData[i][j]);
+    x.forEach((y) => {
+      const src = useSwitch(y);
       boardRowEl.innerHTML += `
-            <div class="board-row-square square-${i + 1}">
-                <img src=${src} alt="" />
-            </div>
-          `;
-    }, boardData[i].length);
+      <div class="board-row-square square-${idx + 1}">
+          <img src=${src} alt="" />
+      </div>
+    `;
+    });
     boardContentEl.appendChild(boardRowEl);
-  }, boardData.length);
+  });
 }
 function drawSection(imagePath, content) {
   const winSectionEl = document.createElement("section");
@@ -99,18 +99,18 @@ function endRubbitMove() {
   moveWolfs();
 }
 function moveWolfs() {
-  useFor((i) => {
-    const { rowIndex, squareIndex } = wolfsData[i];
+  wolfsData.forEach((item, idx, data) => {
+    const { rowIndex, squareIndex } = item;
     const { rowIndex: nearestRowIndex, squareIndex: nearestSquareIndex } =
       getWolfNearestMoveData(rowIndex, squareIndex);
-    wolfsData[i] = moveWolf({
+    data[idx] = moveWolf({
       rowIndex,
       squareIndex,
       nearestRowIndex,
       nearestSquareIndex,
     });
     drawBoard();
-  }, wolfsData.length);
+  });
 }
 function moveWolf({
   rowIndex,
@@ -137,8 +137,8 @@ function getWolfNearestMoveData(rowIndex, squareIndex) {
 }
 function getMovesArr(wolfArr) {
   const movesArr = [];
-  useFor((i) => {
-    const { value, x, y } = wolfArr[i];
+  wolfArr.forEach((item) => {
+    const { value, x, y } = item;
     if (value === null || value === 1 || value === 3) return;
     const { isPrevented } = checkNextHero(value);
     if (isPrevented) return;
@@ -157,60 +157,13 @@ function getMovesArr(wolfArr) {
       rowIndex: x,
       squareIndex: y,
     });
-  }, wolfArr.length);
+  });
   return movesArr;
 }
 function findNearestMoveData(arr) {
-  let nearestMoveData = arr[0];
-  let nearestCoordinate = arr[0]?.coordinate;
-  const _whenOne = [];
-  const sameArr = [];
-  const { rowIndex, squareIndex } = rubbitsData[0];
-  let isChecked = false;
-  console.group("arr");
-  console.log(arr);
-  console.groupEnd();
-  useFor(
-    (i, j) => {
-      const { coordinate } = arr[i];
-      if (arr[j].coordinate >= 1) {
-        _whenOne.push(arr[j]);
-      }
-      if (arr[j].coordinate === 0) {
-        isChecked = true;
-        console.log("mtav 0");
-      }
-
-      if (coordinate === 1 && nearestCoordinate === 1) {
-        if (arr[i].squareIndex <= squareIndex) {
-          nearestMoveData = arr[i];
-          return;
-        }
-      }
-      useIf(coordinate === 0 && nearestCoordinate === 0, () => {
-        useIf(squareIndex > arr[i].squareIndex, () => {
-          isChecked = true;
-          nearestMoveData = arr[i];
-          return;
-        });
-      });
-      useIf(coordinate < nearestCoordinate, () => {
-        nearestCoordinate = coordinate;
-        nearestMoveData = arr[i];
-      });
-    },
-    arr.length,
-    1
-  );
-  const nearestValue = findNearestValue(_whenOne, rowIndex, squareIndex);
-  if (nearestValue && !isChecked) {
-    nearestMoveData = nearestValue;
-    console.group("isChecked && Value");
-    console.log(nearestValue, "Value");
-    console.log(_whenOne, "when one");
-    console.log(squareIndex, "rubbit square index");
-    console.groupEnd();
-  }
+  const nearestMoveData = arr.reduce((prev, curr) => {
+    return prev.coordinate <= curr.coordinate ? prev : curr;
+  });
   return nearestMoveData;
 }
 function fillArr(count, value) {
@@ -219,15 +172,15 @@ function fillArr(count, value) {
 function getRandomBoardData(num) {
   const heroes = getHeroesData(num);
   const randomBoard = getInitialBoard(num);
-  useFor((i) => {
-    useFor((j) => {
+  randomBoard.forEach((x, rowIndex) => {
+    x.forEach((y, squareIndex) => {
       const randomHeroIndex = Math.ceil(Math.random() * heroes.length - 1);
       const hero = heroes[randomHeroIndex];
-      randomBoard[i][j] = hero;
-      setHeroesData(hero, i, j); // Setting the positions of heroes
+      x[squareIndex] = hero;
+      setHeroesData(hero, rowIndex, squareIndex); // Setting the positions of heroes
       heroes.splice(randomHeroIndex, 1); //  removeing the current item from array for not repeating
-    }, randomBoard[i].length);
-  }, randomBoard.length);
+    });
+  });
   return randomBoard;
 }
 function setHeroesData(hero, rowIndex, squareIndex) {
@@ -249,9 +202,9 @@ function setHeroesData(hero, rowIndex, squareIndex) {
 }
 function getInitialBoard(count) {
   const initialBoard = [];
-  useFor(() => {
+  fillArr(count, null).forEach((item) => {
     initialBoard.push(fillArr(count, null));
-  }, count);
+  });
   return initialBoard;
 }
 function getHeroesData(num) {
@@ -275,9 +228,10 @@ function getHeroesData(num) {
   return heroes;
 }
 function distance(p1, p2) {
-  const a = p1.x - p2.x; // 0 row
-  const b = p2.y - p2.y; // -2 square
-  return Math.sqrt(a * a + b * b);
+  const a = p1.x - p2.x;
+  const b = p1.y - p2.y;
+  const c = Math.sqrt(a * a + b * b);
+  return c;
 }
 // Helpers
 function moveRubbitVertical(nextRowIndex) {
@@ -355,19 +309,6 @@ function getWolfData(rowIndex, squareIndex) {
     },
   };
 }
-function findNearestValue(arr, rowIndex, squareIndex) {
-  const values = {};
-  useFor((i) => {
-    values[
-      Math.abs(arr[i].rowIndex - rowIndex) +
-        Math.abs(arr[i].squareIndex - squareIndex)
-    ] = arr[i];
-  }, arr.length);
-  console.group("Values ");
-  console.log(Object.keys(values));
-  console.groupEnd();
-  return values[Math.min(...Object.keys(values))];
-}
 // Common
 function useSwitch(condition, payload) {
   switch (condition) {
@@ -396,11 +337,6 @@ function useSwitch(condition, payload) {
       break;
     default:
       break;
-  }
-}
-function useFor(action, end, start = 0) {
-  for (let i = start, j = 0; i < end; i++, j++) {
-    action(i, j);
   }
 }
 function useIf(condition, action) {
