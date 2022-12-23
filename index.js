@@ -4,9 +4,17 @@ const rabbitsData = [];
 const wolfsData = [];
 let isLose = false;
 let isWin = false;
+// DOM
+const board = document.querySelector(".board");
+const root = document.getElementById("root");
+
 
 // Adding keyboard events
 window.addEventListener("keydown", moveRabbit);
+
+const start = () => {
+  drawStartSection();
+};
 
 const setBoardData = (num) => {
   boardData.push(...getRandomBoardData(num));
@@ -210,7 +218,7 @@ function getInitialBoard(count) {
 function getHeroesData(num) {
   if (!num) throw new Error("Invalid arguments");
   let heroes = [];
-  let wolfsCount = 1; //Math.ceil(num / 2);
+  let wolfsCount = Math.ceil(num / 2);
   let fencesCount = Math.ceil(num - 1);
   let homeCount = 1;
   let rabbitsCount = 1;
@@ -309,6 +317,26 @@ function getWolfData(rowIndex, squareIndex) {
     },
   };
 }
+function drawStartSection() {
+  board.classList.add("hide");
+  const startSection = document.createElement("section");
+  startSection.classList.add("start-section", "end-section");
+  startSection.innerHTML = `
+    <h1>Choose the Size</h1>
+    <div class="start-section-buttons">
+      <button onClick="setBoardSize(5)">5x5</button>
+      <button onClick="setBoardSize(7)">7x7</button>
+      <button onClick="setBoardSize(10)">10x10</button>
+    </div>
+  `;
+  root.appendChild(startSection);
+}
+function setBoardSize(num) {
+  setBoardData(num);
+  const startSection = document.querySelector(".start-section");
+  startSection.classList.add("hide");
+  board.classList.add("show");
+}
 // Common
 function useSwitch(condition, payload) {
   switch (condition) {
@@ -345,4 +373,4 @@ function useIf(condition, action) {
   }
 }
 
-setBoardData(5);
+start();

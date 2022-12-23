@@ -15,9 +15,24 @@ body {
   padding: 28px;
 }
 
+/* Start Section */
+.start-section {
+  min-height: initial !important;
+}
+.start-section-buttons {
+  display: flex;
+  flex-wrap: wrap;
+}
+.start-section-buttons button {
+  width: 150px !important;
+}
+.start-section-buttons button:not(:first-child) {
+  margin-left: 18px;
+}
+/* End Start Section */
+
 .board {
   margin: auto;
-  max-width: 580px;
   display: flex;
   flex-direction: column;
 }
@@ -33,6 +48,7 @@ body {
 }
 .board-row-square {
   width: 114px;
+  height: 100px;
   padding: 18px;
   height: 100%;
   border: solid #c5c5c5 0.7px;
@@ -112,4 +128,13 @@ body {
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
+}
+
+
+.hide {
+  display: none;
+}
+
+.show {
+  display: block;
 }
