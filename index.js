@@ -8,7 +8,6 @@ let isWin = false;
 const board = document.querySelector(".board");
 const root = document.getElementById("root");
 
-
 // Adding keyboard events
 window.addEventListener("keydown", moveRabbit);
 
@@ -62,45 +61,54 @@ function moveRabbit(e) {
     moveLeft() {
       let nextSquareIndex = squareIndex - 1;
       useIf(squareIndex === 0, () => (nextSquareIndex = boardData.length - 1));
-      const { isPrevented } = checkNextHero(
-        boardData[rowIndex][nextSquareIndex]
-      );
-      if (isPrevented) return;
-      moveRabbitHorizontal(nextSquareIndex);
-      endRabbitMove();
+      rabbitAction({
+        type: 1,
+        next: nextSquareIndex,
+      });
     },
     moveRight() {
       let nextSquareIndex = squareIndex + 1;
       useIf(squareIndex === boardData.length - 1, () => (nextSquareIndex = 0));
-      const { isPrevented } = checkNextHero(
-        boardData[rowIndex][nextSquareIndex]
-      );
-      if (isPrevented) return;
-      moveRabbitHorizontal(nextSquareIndex);
-      endRabbitMove();
+      rabbitAction({
+        type: 1,
+        next: nextSquareIndex,
+      });
     },
     moveTop() {
       let nextRowIndex = rowIndex - 1;
       useIf(rowIndex === 0, () => (nextRowIndex = boardData.length - 1));
-      const { isPrevented } = checkNextHero(
-        boardData[nextRowIndex][squareIndex]
-      );
-      if (isPrevented) return;
-      moveRabbitVertical(nextRowIndex);
-      endRabbitMove();
+      rabbitAction({
+        type: 2,
+        next: nextRowIndex,
+      });
     },
     moveBottom() {
       let nextRowIndex = rowIndex + 1;
       useIf(rowIndex === boardData.length - 1, () => (nextRowIndex = 0));
-      const { isPrevented } = checkNextHero(
-        boardData[nextRowIndex][squareIndex]
-      );
-      if (isPrevented) return;
-      moveRabbitVertical(nextRowIndex);
-      endRabbitMove();
+      rabbitAction({
+        type: 2,
+        next: nextRowIndex,
+      });
     },
   };
   useSwitch(e.keyCode, payload);
+}
+function rabbitAction(data) {
+  const { next, type } = data;
+  const { squareIndex, rowIndex } = rabbitsData[0];
+  let moveFunc;
+  let hero;
+  if (type === 1) {
+    hero = boardData[rowIndex][next];
+    moveFunc = moveRabbitHorizontal;
+  } else if (type === 2) {
+    hero = boardData[next][squareIndex];
+    moveFunc = moveRabbitVertical;
+  }
+  const { isPrevented } = checkNextHero(hero);
+  if (isPrevented) return;
+  moveFunc(next);
+  endRabbitMove();
 }
 function endRabbitMove() {
   drawBoard();
