@@ -18,6 +18,7 @@ const start = () => {
 const setBoardData = (num) => {
   boardData.push(...getRandomBoardData(num));
   drawBoard();
+  console.log(boardData, "boardDData");
 };
 function drawBoard() {
   if (isWin) {
@@ -34,7 +35,7 @@ function drawBoard() {
     const boardRowEl = document.createElement("div");
     boardRowEl.classList.add("board-row");
     x.forEach((y) => {
-      const src = useSwitch(y);
+      const src = checkHeroImage(y);
       boardRowEl.innerHTML += `
       <div class="board-row-square square-${idx + 1}">
           <img src=${src} alt="" />
@@ -57,57 +58,75 @@ function drawSection(imagePath, content) {
 // Move heroes
 function moveRabbit(e) {
   const { squareIndex, rowIndex } = rabbitsData[0];
+  const start = 0;
+  const end = boardData.length - 1;
   const payload = {
     moveLeft() {
       let nextSquareIndex = squareIndex - 1;
-      useIf(squareIndex === 0, () => (nextSquareIndex = boardData.length - 1));
       rabbitAction({
         type: 1,
         next: nextSquareIndex,
+        condition: squareIndex === 0,
+        action() {
+          return boardData.length - 1;
+        },
       });
     },
     moveRight() {
       let nextSquareIndex = squareIndex + 1;
-      useIf(squareIndex === boardData.length - 1, () => (nextSquareIndex = 0));
       rabbitAction({
         type: 1,
         next: nextSquareIndex,
+        condition: squareIndex === boardData.length - 1,
+        action() {
+          return 0;
+        },
       });
     },
     moveTop() {
       let nextRowIndex = rowIndex - 1;
-      useIf(rowIndex === 0, () => (nextRowIndex = boardData.length - 1));
       rabbitAction({
         type: 2,
         next: nextRowIndex,
+        condition: rowIndex === 0,
+        action() {
+          return boardData.length - 1;
+        },
       });
     },
     moveBottom() {
       let nextRowIndex = rowIndex + 1;
-      useIf(rowIndex === boardData.length - 1, () => (nextRowIndex = 0));
       rabbitAction({
         type: 2,
         next: nextRowIndex,
+        condition: rowIndex === boardData.length - 1,
+        action() {
+          return 0;
+        },
       });
     },
   };
-  useSwitch(e.keyCode, payload);
+  checkHeroMove(e.keyCode, payload);
 }
 function rabbitAction(data) {
-  const { next, type } = data;
+  const { next, type, condition, action } = data;
   const { squareIndex, rowIndex } = rabbitsData[0];
   let moveFunc;
   let hero;
+  let nextClone = next;
+  useIf(condition, () => {
+    nextClone = action();
+  });
   if (type === 1) {
-    hero = boardData[rowIndex][next];
+    hero = boardData[rowIndex][nextClone];
     moveFunc = moveRabbitHorizontal;
   } else if (type === 2) {
-    hero = boardData[next][squareIndex];
+    hero = boardData[nextClone][squareIndex];
     moveFunc = moveRabbitVertical;
   }
   const { isPrevented } = checkNextHero(hero);
   if (isPrevented) return;
-  moveFunc(next);
+  moveFunc(nextClone);
   endRabbitMove();
 }
 function endRabbitMove() {
@@ -201,7 +220,7 @@ function getRandomBoardData(num) {
 }
 function setHeroesData(hero, rowIndex, squareIndex) {
   const payload = {
-    setrabbitsData() {
+    setRabbitsData() {
       rabbitsData.push({
         rowIndex,
         squareIndex,
@@ -214,11 +233,11 @@ function setHeroesData(hero, rowIndex, squareIndex) {
       });
     },
   };
-  useSwitch(hero, payload);
+  checkHeroData(hero, payload);
 }
 function getInitialBoard(count) {
   const initialBoard = [];
-  fillArr(count, null).forEach((item) => {
+  fillArr(count, null).forEach(() => {
     initialBoard.push(fillArr(count, null));
   });
   return initialBoard;
@@ -346,19 +365,22 @@ function setBoardSize(num) {
   board.classList.add("show");
 }
 // Common
-function useSwitch(condition, payload) {
+function checkHeroData(condition, payload) {
+  useIf(condition === 2 || condition === 1, () => {
+    console.log(true);
+  });
   switch (condition) {
-    case 2: // rabbit
-      payload?.setrabbitsData();
-      return "./assets/rabbit.png";
+    case 2: // Rabbit
+      payload?.setRabbitsData();
     case 1: // Wolfs
       payload?.setWolfsData();
-      return "./assets/wolf.png";
-    case 3:
-      return "./assets/home.png";
-    case 4:
-      return "./assets/fence.png";
-    // Checking Heroes move
+    default:
+      break;
+  }
+}
+function checkHeroMove(condition, payload) {
+  console.log(condition, "condition");
+  switch (condition) {
     case 37: // Move rabbit to Left
       payload.moveLeft();
       break;
@@ -371,6 +393,20 @@ function useSwitch(condition, payload) {
     case 40: // Move rabbit to Bottom
       payload.moveBottom();
       break;
+    default:
+      break;
+  }
+}
+function checkHeroImage(condition) {
+  switch (condition) {
+    case 2: // rabbit
+      return "./assets/rabbit.png";
+    case 1: // wolfs
+      return "./assets/wolf.png";
+    case 3:
+      return "./assets/home.png";
+    case 4:
+      return "./assets/fence.png";
     default:
       break;
   }
